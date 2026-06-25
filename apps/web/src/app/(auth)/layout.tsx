@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import Link from "next/link";
+import { BookOpenCheck } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Authentication",
@@ -13,12 +15,12 @@ export default function AuthLayout({
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Top bar */}
       <div className="border-b border-gray-200 bg-white px-6 py-4">
-        <div className="flex items-center gap-2">
-          <div className="h-6 w-6 bg-gray-900" />
+        <Link href="/" className="flex items-center gap-2">
+          <BookOpenCheck className="h-6 w-6 text-gray-900" />
           <span className="text-sm font-semibold tracking-tight text-gray-900">
             AuditFlow
           </span>
-        </div>
+        </Link>
       </div>
 
       {/* Content */}
