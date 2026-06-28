@@ -438,27 +438,25 @@ model Notification {
 // ─── Activity Log ─────────────────────────────────────────────────────────────
 
 model ActivityLog {
-  id         String   @id @default(cuid())
-  orgId      String
-  userId     String?
+  id        String @id @default(cuid())
+
+  orgId     String
+  userId    String?
+
+  auditId   String?
+  findingId String?
+  actionId  String?
+  riskId    String?
+
   action     String
-  entity     String
-  entityId   String
   meta       Json?
-  ipAddress  String?
-  userAgent  String?
   createdAt  DateTime @default(now())
 
-  organization Organization           @relation(fields: [orgId], references: [id])
-  user              User?             @relation(fields: [userId], references: [id])
-  audit             Audit?            @relation(fields: [entityId], references: [id], map: "ActivityLog_auditId_fkey")
-  finding           Finding?          @relation(fields: [entityId], references: [id], map: "ActivityLog_findingId_fkey")
-  correctiveAction  CorrectiveAction? @relation(fields: [entityId], references: [id], map: "ActivityLog_actionId_fkey")
-  risk              Risk?             @relation(fields: [entityId], references: [id], map: "ActivityLog_riskId_fkey")
+  organization Organization @relation(fields:[orgId], references:[id])
+  user         User?        @relation(fields:[userId], references:[id])
 
-  @@index([orgId])
-  @@index([userId])
-  @@index([entity])
-  @@index([entityId])
-  @@index([createdAt])
+  audit    Audit?            @relation(fields:[auditId], references:[id])
+  finding  Finding?          @relation(fields:[findingId], references:[id])
+  actionRef CorrectiveAction? @relation(fields:[actionId], references:[id])
+  risk     Risk?             @relation(fields:[riskId], references:[id])
 }

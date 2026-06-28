@@ -12,7 +12,7 @@ import {
   inviteAcceptSchema,
 } from "@/lib/validations";
 import type { ApiResponse } from "@/types";
-import { sendOrgApprovalInvite, sendUserInvite } from "@/lib/email/resend";
+import { sendUserInvite } from "@/lib/email/resend";
 
 // ─── Login ────────────────────────────────────────────────────────────────────
 
@@ -296,8 +296,6 @@ export async function acceptInviteAction(
         data: {
           orgId: invite.orgId,
           action: "USER_JOINED",
-          entity: "User",
-          entityId: authData.user.id,
           meta: { email: invite.email, role: invite.role },
         },
       });
