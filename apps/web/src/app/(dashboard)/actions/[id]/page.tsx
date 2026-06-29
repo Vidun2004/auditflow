@@ -11,6 +11,8 @@ import {
 } from "@/components/shared/status-badge";
 import { ActionStatusControls } from "@/components/actions/action-status-controls";
 import { ActionProgressControl } from "@/components/actions/action-progress-control";
+import { FileUploader } from "@/components/evidence/file-uploader";
+import { EvidenceList } from "@/components/evidence/evidence-list";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -229,44 +231,26 @@ export default async function ActionDetailPage({ params }: Props) {
           </div>
 
           {/* Evidence */}
-          {action.evidence.length > 0 && (
-            <div className="border border-gray-200 bg-white">
-              <div className="border-b border-gray-200 px-5 py-4">
-                <p className="text-xs font-medium uppercase tracking-wider text-gray-400">
-                  Evidence ({action.evidence.length})
-                </p>
-              </div>
-              <div className="divide-y divide-gray-100">
-                {action.evidence.map((ev) => (
-                  <div
-                    key={ev.id}
-                    className="flex items-center gap-3 px-5 py-3"
-                  >
-                    <div className="flex h-8 w-8 items-center justify-center border border-gray-200 bg-gray-50 shrink-0">
-                      <span className="text-xs font-medium text-gray-500 uppercase">
-                        {ev.fileType.split("/")[1]?.slice(0, 3) ?? "FILE"}
-                      </span>
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-gray-700 truncate">
-                        {ev.name}
-                      </p>
-                      <p className="text-xs text-gray-400">
-                        {ev.fileSizeKb
-                          ? `${(ev.fileSizeKb / 1024).toFixed(1)} MB`
-                          : ""}
-                        {" · "}
-                        {new Date(ev.createdAt).toLocaleDateString("en-GB", {
-                          day: "2-digit",
-                          month: "short",
-                        })}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
+          <div className="border border-gray-200 bg-white">
+            <div className="border-b border-gray-200 px-5 py-4">
+              <p className="text-xs font-medium uppercase tracking-wider text-gray-400">
+                Evidence ({action.evidence.length})
+              </p>
             </div>
-          )}
+            <div className="p-5 space-y-4">
+              {canUpdate && <FileUploader actionId={action.id} />}
+              <EvidenceList
+                items={action.evidence.map((e) => ({
+                  id: e.id,
+                  name: e.name,
+                  fileType: e.fileType,
+                  fileSizeKb: e.fileSizeKb,
+                  createdAt: e.createdAt,
+                }))}
+                canDelete={canManage}
+              />
+            </div>
+          </div>
         </div>
 
         {/* Right: sidebar */}

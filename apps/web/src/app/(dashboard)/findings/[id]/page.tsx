@@ -13,6 +13,8 @@ import {
 import { FindingStatusControls } from "@/components/findings/finding-status-controls";
 import { FindingSeverityControls } from "@/components/findings/finding-severity-controls";
 import { EmptyState } from "@/components/shared/empty-state";
+import { FileUploader } from "@/components/evidence/file-uploader";
+import { EvidenceList } from "@/components/evidence/evidence-list";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -281,6 +283,28 @@ export default async function FindingDetailPage({ params }: Props) {
               </div>
             </div>
           )}
+
+          {/* Evidence */}
+          <div className="border border-gray-200 bg-white">
+            <div className="border-b border-gray-200 px-5 py-4">
+              <p className="text-xs font-medium uppercase tracking-wider text-gray-400">
+                Evidence ({finding._count.evidence})
+              </p>
+            </div>
+            <div className="p-5 space-y-4">
+              {canEdit && <FileUploader findingId={finding.id} />}
+              <EvidenceList
+                items={finding.evidence.map((e) => ({
+                  id: e.id,
+                  name: e.name,
+                  fileType: e.fileType,
+                  fileSizeKb: e.fileSizeKb,
+                  createdAt: e.createdAt,
+                }))}
+                canDelete={canEdit}
+              />
+            </div>
+          </div>
         </div>
 
         {/* Right: sidebar */}

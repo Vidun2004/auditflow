@@ -11,6 +11,8 @@ import {
 } from "@/components/shared/status-badge";
 import { AuditStatusControls } from "@/components/audits/audit-status-controls";
 import { EmptyState } from "@/components/shared/empty-state";
+import { FileUploader } from "@/components/evidence/file-uploader";
+import { EvidenceList } from "@/components/evidence/evidence-list";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -198,6 +200,28 @@ export default async function AuditDetailPage({ params }: Props) {
                 </tbody>
               </table>
             )}
+          </div>
+
+          {/* Evidence */}
+          <div className="border border-gray-200 bg-white">
+            <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4">
+              <p className="text-xs font-medium uppercase tracking-wider text-gray-400">
+                Evidence ({audit._count.evidence})
+              </p>
+            </div>
+            <div className="p-5 space-y-4">
+              {canEdit && <FileUploader auditId={audit.id} />}
+              <EvidenceList
+                items={audit.evidence.map((e) => ({
+                  id: e.id,
+                  name: e.name,
+                  fileType: e.fileType,
+                  fileSizeKb: e.fileSizeKb,
+                  createdAt: e.createdAt,
+                }))}
+                canDelete={canEdit}
+              />
+            </div>
           </div>
         </div>
 
