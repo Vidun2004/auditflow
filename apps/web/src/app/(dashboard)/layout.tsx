@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { requireSession } from "@/lib/session";
 import { AppShell } from "@/components/layout/app-shell";
+import { prisma } from "@auditflow/db";
 
 export default async function DashboardLayout({
   children,
@@ -13,5 +14,13 @@ export default async function DashboardLayout({
     redirect(process.env.NEXT_PUBLIC_ADMIN_URL ?? "http://localhost:3001");
   }
 
-  return <AppShell session={session}>{children}</AppShell>;
+  const unreadCount = await prisma.notification.count({
+    where: { orgId: session.orgId, userId: session.id, isRead: false },
+  });
+
+  return (
+    <AppShell session={session} unreadCount={unreadCount}>
+      {children}
+    </AppShell>
+  );
 }

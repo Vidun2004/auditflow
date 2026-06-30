@@ -45,6 +45,9 @@ export type {
   Framework,
 };
 
+// ─── Notification Types ───────────────────────────
+export type NotificationType = any;
+
 // ─── Auth session user (what we carry in context) ─────────────────────────────
 export interface SessionUser {
   id: string; // Prisma User.id
