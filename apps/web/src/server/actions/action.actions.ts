@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { actionSchema, type ActionInput } from "@/lib/validations";
 import { requireSession, requireRole } from "@/lib/session";
+import { notifyActionAssigned } from "@/lib/notifications";
 import type { ApiResponse } from "@/types";
 
 // ─── Create action ────────────────────────────────────────────────────────────
@@ -25,7 +26,6 @@ export async function createActionAction(
 
   const { dueDate, ...rest } = parsed.data;
 
-  // Verify finding belongs to org
   const finding = await prisma.finding.findFirst({
     where: { id: rest.findingId, orgId: session.orgId },
     select: { id: true },
@@ -54,6 +54,16 @@ export async function createActionAction(
       meta: { title: rest.title },
     },
   });
+
+  // Notify assignee if different from creator
+  if (rest.assigneeId && rest.assigneeId !== session.id) {
+    await notifyActionAssigned(
+      session.orgId,
+      action.id,
+      rest.title,
+      rest.assigneeId,
+    );
+  }
 
   revalidatePath("/actions");
   revalidatePath(`/findings/${rest.findingId}`);
@@ -89,11 +99,22 @@ export async function updateActionAction(
 
   await prisma.correctiveAction.update({
     where: { id: actionId },
-    data: {
-      ...rest,
-      dueDate: dueDate ? new Date(dueDate) : null,
-    },
+    data: { ...rest, dueDate: dueDate ? new Date(dueDate) : null },
   });
+
+  // Notify if assignee changed
+  if (
+    rest.assigneeId &&
+    rest.assigneeId !== existing.assigneeId &&
+    rest.assigneeId !== session.id
+  ) {
+    await notifyActionAssigned(
+      session.orgId,
+      actionId,
+      rest.title,
+      rest.assigneeId,
+    );
+  }
 
   await prisma.activityLog.create({
     data: {
@@ -137,7 +158,6 @@ export async function updateActionStatusAction(
     data: {
       status,
       ...(closedAt !== undefined && { closedAt }),
-      // Auto-set progress to 100 when closed
       ...(status === "CLOSED" && { progress: 100 }),
     },
   });

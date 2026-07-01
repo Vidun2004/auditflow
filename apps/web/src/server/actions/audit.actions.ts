@@ -4,7 +4,8 @@ import { prisma } from "@auditflow/db";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { auditSchema, type AuditInput } from "@/lib/validations";
-import { requireRole } from "@/lib/session";
+import { requireSession, requireRole } from "@/lib/session";
+import { notifyAuditAssigned } from "@/lib/notifications";
 import type { ApiResponse } from "@/types";
 
 // ─── Create audit ─────────────────────────────────────────────────────────────
@@ -49,6 +50,19 @@ export async function createAuditAction(
     },
   });
 
+  // Notify assignees (skip creator)
+  if (assigneeIds?.length) {
+    const othersToNotify = assigneeIds.filter((id) => id !== session.id);
+    if (othersToNotify.length) {
+      await notifyAuditAssigned(
+        session.orgId,
+        audit.id,
+        rest.title,
+        othersToNotify,
+      );
+    }
+  }
+
   revalidatePath("/audits");
   return { data: { id: audit.id }, error: null, success: true };
 }
@@ -72,6 +86,7 @@ export async function updateAuditAction(
 
   const existing = await prisma.audit.findFirst({
     where: { id: auditId, orgId: session.orgId },
+    include: { assignees: { select: { id: true } } },
   });
   if (!existing) {
     return { data: null, error: "Audit not found.", success: false };
@@ -85,9 +100,7 @@ export async function updateAuditAction(
       ...rest,
       startDate: startDate ? new Date(startDate) : null,
       endDate: endDate ? new Date(endDate) : null,
-      assignees: {
-        set: assigneeIds?.map((id) => ({ id })) ?? [],
-      },
+      assignees: { set: assigneeIds?.map((id) => ({ id })) ?? [] },
     },
   });
 
@@ -100,6 +113,17 @@ export async function updateAuditAction(
       meta: { title: rest.title },
     },
   });
+
+  // Notify newly added assignees only
+  if (assigneeIds?.length) {
+    const existingIds = existing.assignees.map((a) => a.id);
+    const newlyAdded = assigneeIds.filter(
+      (id) => !existingIds.includes(id) && id !== session.id,
+    );
+    if (newlyAdded.length) {
+      await notifyAuditAssigned(session.orgId, auditId, rest.title, newlyAdded);
+    }
+  }
 
   revalidatePath(`/audits/${auditId}`);
   revalidatePath("/audits");

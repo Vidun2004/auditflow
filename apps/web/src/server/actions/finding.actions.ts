@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { findingSchema, type FindingInput } from "@/lib/validations";
 import { requireSession, requireRole } from "@/lib/session";
+import { notifyFindingCreated } from "@/lib/notifications";
 import type { ApiResponse } from "@/types";
 
 // ─── Create finding ───────────────────────────────────────────────────────────
@@ -25,7 +26,6 @@ export async function createFindingAction(
 
   const { dueDate, ...rest } = parsed.data;
 
-  // Verify audit belongs to org
   const audit = await prisma.audit.findFirst({
     where: { id: rest.auditId, orgId: session.orgId },
     select: { id: true },
@@ -54,6 +54,17 @@ export async function createFindingAction(
       meta: { title: rest.title, severity: rest.severity },
     },
   });
+
+  // Notify assignee if different from creator
+  if (rest.assigneeId && rest.assigneeId !== session.id) {
+    await notifyFindingCreated(
+      session.orgId,
+      finding.id,
+      rest.title,
+      rest.severity,
+      rest.assigneeId,
+    );
+  }
 
   revalidatePath("/findings");
   revalidatePath(`/audits/${rest.auditId}`);
@@ -89,11 +100,23 @@ export async function updateFindingAction(
 
   await prisma.finding.update({
     where: { id: findingId },
-    data: {
-      ...rest,
-      dueDate: dueDate ? new Date(dueDate) : null,
-    },
+    data: { ...rest, dueDate: dueDate ? new Date(dueDate) : null },
   });
+
+  // Notify if assignee changed
+  if (
+    rest.assigneeId &&
+    rest.assigneeId !== existing.assigneeId &&
+    rest.assigneeId !== session.id
+  ) {
+    await notifyFindingCreated(
+      session.orgId,
+      findingId,
+      rest.title,
+      rest.severity,
+      rest.assigneeId,
+    );
+  }
 
   await prisma.activityLog.create({
     data: {
@@ -130,10 +153,7 @@ export async function updateFindingStatusAction(
 
   await prisma.finding.update({
     where: { id: findingId },
-    data: {
-      status,
-      ...(resolvedAt !== undefined && { resolvedAt }),
-    },
+    data: { status, ...(resolvedAt !== undefined && { resolvedAt }) },
   });
 
   await prisma.activityLog.create({
